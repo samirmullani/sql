@@ -1,0 +1,64 @@
+1. Stored Procedure (Display orders of a customer by name)
+
+DELIMITER //
+CREATE PROCEDURE GetOrdersByCustomer(IN cust_name VARCHAR(100))
+BEGIN
+  SELECT o.order_id, o.order_date, o.status, o.total_amount
+  FROM orders o
+  JOIN customers c ON o.customer_id = c.customer_id
+  WHERE c.name = cust_name;
+END //
+DELIMITER ;
+
+
+2. Stored Function (Return total spending of a customer)
+
+DELIMITER //
+CREATE FUNCTION TotalSpending(custId INT) RETURNS DECIMAL(12,2)
+DETERMINISTIC
+BEGIN
+  DECLARE spend DECIMAL(12,2);
+  SELECT SUM(total_amount) INTO spend
+  FROM orders WHERE customer_id = custId;
+  RETURN IFNULL(spend,0);
+END //
+DELIMITER ;
+
+3. Trigger (Auto-update order total when new order_item inserted)
+
+DELIMITER //
+CREATE TRIGGER trg_update_total
+AFTER INSERT ON order_items
+FOR EACH ROW
+BEGIN
+  UPDATE orders
+  SET total_amount = total_amount + (NEW.quantity * NEW.unit_price)
+  WHERE order_id = NEW.order_id;
+END //
+DELIMITER ;
+
+4. Cursor Example (Loop through all products and print names with price < 500)
+
+DELIMITER //
+CREATE PROCEDURE CheapProducts()
+BEGIN
+  DECLARE done INT DEFAULT FALSE;
+  DECLARE p_name VARCHAR(150);
+  DECLARE p_price DECIMAL(10,2);
+
+  DECLARE cur CURSOR FOR 
+    SELECT name, price FROM products WHERE price < 500;
+
+  DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+  OPEN cur;
+  read_loop: LOOP
+    FETCH cur INTO p_name, p_price;
+    IF done THEN 
+      LEAVE read_loop;
+    END IF;
+    SELECT CONCAT('Product: ',p_name,' | Price: ',p_price) AS info;
+  END LOOP;
+  CLOSE cur;
+END //
+DELIMITER ;
