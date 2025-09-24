@@ -1,0 +1,38 @@
+Cursor using handler
+/////////////////////
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS cursor_chk$$
+
+CREATE PROCEDURE cursor_chk()
+BEGIN
+    DECLARE a VARCHAR(15);
+    DECLARE b DECIMAL(10,2);
+    DECLARE c INT;
+    DECLARE done INT DEFAULT 0;
+
+    -- Cursor declaration
+    DECLARE cur1 CURSOR FOR
+        SELECT ename, sal, deptno FROM emp;
+
+    -- Exit handler for cursor
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+
+    OPEN cur1;
+
+    read_loop: LOOP
+        FETCH cur1 INTO a, b, c;
+        IF done = 1 THEN
+            LEAVE read_loop;
+        END IF;
+        SELECT a AS Employee, b AS Salary, c AS DeptNo;
+    END LOOP;
+
+    CLOSE cur1;
+END$$
+
+DELIMITER ;
+
+-- Call procedure
+CALL cursor_chk();
